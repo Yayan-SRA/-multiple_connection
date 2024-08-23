@@ -6,7 +6,9 @@ use App\Http\Controllers\DesController;
 use App\Http\Controllers\TryController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\GeocodeController;
+use App\Http\Controllers\SerProvController;
 use App\Http\Controllers\GeocodesController;
+use App\Http\Controllers\UserTestController;
 use App\Http\Controllers\SunOutageController;
 
 /*
@@ -49,3 +51,5 @@ Route::get('/solveStrange', [GeocodesController::class, 'getData']);
 // Route::get('/solveStrange', [GeocodesController::class, 'getDistrictSubdistrict']);
 Route::post('/try', [TryController::class, 'index']);
 Route::post('sun-outage-prediction', [SunOutageController::class, 'calculate']);
+Route::post('insertSerprovL', [SerProvController::class, 'insertSerprovL']);
+Route::get('createUserTest', [UserTestController::class, 'index']);

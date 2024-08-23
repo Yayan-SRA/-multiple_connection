@@ -26,137 +26,164 @@ use Illuminate\Support\Facades\Http;
 class TestController extends Controller
 {
     public function insAll(){
-        
-        $insertCounts= [
-            'insertProv' => 0,
-            'failInsertProv' => 0,
-            'alreadyProv' => 0,
-            'insertCity' => 0,
-            'failInsertCity' => 0,
-            'alreadyCity' => 0,
-            'insertDistrict' => 0,
-            'failInsertDistrict' => 0,
-            'alreadyDistrict' => 0,
-            'insertSubdistrict' => 0,
-            'failInsertSubdistrict' => 0,
-            'alreadySubdistrict' => 0,
-        ];
-        $responseProv = Http::get('https://sipedas.pertanian.go.id/api/wilayah/list_wilayah?thn=2023&lvl=10&lv2=11');
-        if ($responseProv->successful()) {
-            $dataArrayProv = json_decode($responseProv, true);
-            $provKeys = array_keys($dataArrayProv);
-            for ($i=0; $i < count($provKeys); $i++) { 
-                $checkProv = DB::connection('second_db')->table('cpr_mst_province')->where('ID', $provKeys[$i])->first();
-                if (!$checkProv){
-                    $data = [
-                        'ID' => $provKeys[$i],
-                        'PROVINCE_NAME' => $dataArrayProv[$provKeys[$i]],
-                        'REMARKS' => 'FROM PERTANIAN',
-                        'CREATED_BY' => 'SOFYAN',
-                        'DATE_CREATED' => NOW(), 
-                    ];
-                    $instProv = DB::connection('second_db')->table('cpr_mst_province')->insert($data);
-                    if($instProv){
-                        $insertCounts['insertProv']++;
-                    } else{
-                        $insertCounts['failInsertProv']++;
-                    }
-                } else{
-                    $insertCounts['alreadyProv']++;
-                }
-                $responseCity = Http::get("https://sipedas.pertanian.go.id/api/wilayah/list_wilayah?thn=2023&lvl=11&pro=$provKeys[$i]&lv2=12");
-                if ($responseCity->successful()) {
-                    $dataArrayCity = json_decode($responseCity, true);
-                    $cityKeys = array_keys($dataArrayCity);
-                    for ($p=0; $p < count($cityKeys); $p++) { 
-                        $checkCity = DB::connection('second_db')->table('cpr_mst_city')->where('ID', $cityKeys[$p])->first();
-                        if (!$checkCity){
-                            $data = [
-                                'ID' => $cityKeys[$p],
-                                'CITY_NAME' => $dataArrayCity[$cityKeys[$p]],
-                                'REMARKS' => 'FROM PERTANIAN',
-                                'CREATED_BY' => 'SOFYAN',
-                                'DATE_CREATED' => NOW(), 
-                                // 'LONGITUDE' => $cityReady[$p]['LONGITUDE'],
-                                // 'LATITUDE' => $cityReady[$p]['LATITUDE'],
-                                'PROVINCE' => $dataArrayProv[$provKeys[$i]],
-                                'CPR_MST_PROVINCE_ID' => $provKeys[$i],
-                            ];
-                            $instCity = DB::connection('second_db')->table('cpr_mst_city')->insert($data);
-                            if($instCity){
-                                $insertCounts['insertCity']++;
-                            } else {
-                                $insertCounts['failInsertCity']++;
-                            }
+        try {
+            $insertCounts= [
+                'insertProv' => 0,
+                'failInsertProv' => 0,
+                'alreadyProv' => 0,
+                'insertCity' => 0,
+                'failInsertCity' => 0,
+                'alreadyCity' => 0,
+                'insertDistrict' => 0,
+                'failInsertDistrict' => 0,
+                'alreadyDistrict' => 0,
+                'insertSubdistrict' => 0,
+                'failInsertSubdistrict' => 0,
+                'alreadySubdistrict' => 0,
+                'connectionFailedforAPICity' => 0,
+                'connectionFailedforAPIDistrict' => 0,
+                'connectionFailedforAPISubdistrict' => 0,
+            ];
+            $responseProv = Http::get('https://sipedas.pertanian.go.id/api/wilayah/list_wilayah?thn=2024&lvl=10&lv2=11');
+            if ($responseProv->successful()) {
+                $dataArrayProv = json_decode($responseProv, true);
+                $provKeys = array_keys($dataArrayProv);
+                // $dataArrayProv = [
+                //     "74" => "SULAWESI TENGGARA"
+                // ];
+                // $provKeys = [74];
+                DB::beginTransaction();
+                for ($i=0; $i < count($provKeys); $i++) { 
+                    $checkProv = DB::connection('h58_dev_db')->table('cpr_mst_province')->where('ID', $provKeys[$i])->first();
+                    if (!$checkProv){
+                        $data = [
+                            'ID' => $provKeys[$i],
+                            'PROVINCE_NAME' => $dataArrayProv[$provKeys[$i]],
+                            'REMARKS' => 'FROM PERTANIAN 2024',
+                            'CREATED_BY' => 'SOFYAN',
+                            'DATE_CREATED' => NOW(), 
+                        ];
+                        $instProv = DB::connection('h58_dev_db')->table('cpr_mst_province')->insert($data);
+                        if($instProv){
+                            $insertCounts['insertProv']++;
                         } else{
-                            $insertCounts['alreadyCity']++;
+                            $insertCounts['failInsertProv']++;
                         }
-                        // return $cityKeys[$p];
-                        $cityKeysSearch = substr($cityKeys[$p], -2);
-                        $responseDistrict = Http::get("https://sipedas.pertanian.go.id/api/wilayah/list_wilayah?thn=2023&lvl=12&pro=$provKeys[$i]&kab=$cityKeysSearch&lv2=13");
-                        if ($responseDistrict->successful()) {
-                            $dataArrayDistrict = json_decode($responseDistrict, true);
-                            $districtKeys = array_keys($dataArrayDistrict);
-                            for ($q=0; $q < count($districtKeys); $q++) { 
-                                $checkDistrict = DB::connection('second_db')->table('cpr_mst_district')->where('ID', $districtKeys[$q])->first();
-                                if (!$checkDistrict){
-                                    $data = [
-                                        'ID' => $districtKeys[$q],
-                                        'DISTRICT_NAME' => $dataArrayDistrict[$districtKeys[$q]],
-                                        'REMARKS' => 'FROM PERTANIAN',
-                                        'CREATED_BY' => 'SOFYAN',
-                                        'DATE_CREATED' => NOW(), 
-                                        'CITY' => $dataArrayCity[$cityKeys[$p]],
-                                        'CPR_MST_CITY_ID' => $cityKeys[$p],
-                                        'CPR_MST_CITY_ID_BACUP' => $cityKeys[$p],
-                                    ];
-                                    $instDistrict = DB::connection('second_db')->table('cpr_mst_district')->insert($data);
-                                    if($instDistrict){
-                                        $insertCounts['insertDistrict']++;
-                                    } else {
-                                        $insertCounts['failInsertDistrict']++;
-                                    }
-                                } else{
-                                    $insertCounts['alreadyDistrict']++;
+                    } else{
+                        $insertCounts['alreadyProv']++;
+                    }
+                    $responseCity = Http::get("https://sipedas.pertanian.go.id/api/wilayah/list_wilayah?thn=2024&lvl=11&pro=$provKeys[$i]&lv2=12");
+                    if ($responseCity->successful()) {
+                        $dataArrayCity = json_decode($responseCity, true);
+                        $cityKeys = array_keys($dataArrayCity);
+                        for ($p=0; $p < count($cityKeys); $p++) { 
+                            $checkCity = DB::connection('h58_dev_db')->table('cpr_mst_city')->where('ID', $cityKeys[$p])->first();
+                            if (!$checkCity){
+                                $data = [
+                                    'ID' => $cityKeys[$p],
+                                    'CITY_NAME' => $dataArrayCity[$cityKeys[$p]],
+                                    'REMARKS' => 'FROM PERTANIAN 2024',
+                                    'CREATED_BY' => 'SOFYAN',
+                                    'DATE_CREATED' => NOW(), 
+                                    // 'LONGITUDE' => $cityReady[$p]['LONGITUDE'],
+                                    // 'LATITUDE' => $cityReady[$p]['LATITUDE'],
+                                    'PROVINCE' => $dataArrayProv[$provKeys[$i]],
+                                    'CPR_MST_PROVINCE_ID' => $provKeys[$i],
+                                ];
+                                $instCity = DB::connection('h58_dev_db')->table('cpr_mst_city')->insert($data);
+                                // $instCity = true;
+                                if($instCity){
+                                    $insertCounts['insertCity']++;
+                                } else {
+                                    $insertCounts['failInsertCity']++;
                                 }
-                                $districtKeysSearch = substr($districtKeys[$q], -3);
-                                $responseSubdistrict = Http::get("https://sipedas.pertanian.go.id/api/wilayah/list_wilayah?thn=2023&lvl=13&pro=$provKeys[$i]&kab=$cityKeysSearch&kec=$districtKeysSearch&lv2=14");
-                                if ($responseSubdistrict->successful()) {
-                                    $dataArraySubdistrict = json_decode($responseSubdistrict, true);
-                                    $subdistrictKeys = array_keys($dataArraySubdistrict);
-                                    for ($r=0; $r < count($subdistrictKeys); $r++) { 
-                                        $checkSubdistrict = DB::connection('second_db')->table('cpr_mst_subdistrict')->where('ID', $subdistrictKeys[$r])->first();
-                                        if (!$checkSubdistrict){
-                                            $data = [
-                                                'ID' => $subdistrictKeys[$r],
-                                                'SUBDISTRICT_NAME' => $dataArraySubdistrict[$subdistrictKeys[$r]],
-                                                'REMARKS' => 'FROM PERTANIAN',
-                                                'CREATED_BY' => 'SOFYAN',
-                                                'DATE_CREATED' => NOW(), 
-                                                'DISTRICT_NAME' => $dataArrayDistrict[$districtKeys[$q]],
-                                                'CPR_MST_DISTRICT_ID' => $districtKeys[$q],
-                                            ];
-                                            $instSubdistrict = DB::connection('second_db')->table('cpr_mst_subdistrict')->insert($data);
-                                            if($instSubdistrict){
-                                                $insertCounts['insertSubdistrict']++;
-                                            } else {
-                                                $insertCounts['failInsertSubdistrict']++;
-                                            }
-                                        } else{
-                                            $insertCounts['alreadySubdistrict']++;
+                            } else{
+                                $insertCounts['alreadyCity']++;
+                            }
+                            // return $cityKeys[$p];
+                            $cityKeysSearch = substr($cityKeys[$p], -2);
+                            $responseDistrict = Http::get("https://sipedas.pertanian.go.id/api/wilayah/list_wilayah?thn=2024&lvl=12&pro=$provKeys[$i]&kab=$cityKeysSearch&lv2=13");
+                            if ($responseDistrict->successful()) {
+                                $dataArrayDistrict = json_decode($responseDistrict, true);
+                                $districtKeys = array_keys($dataArrayDistrict);
+                                for ($q=0; $q < count($districtKeys); $q++) { 
+                                    $checkDistrict = DB::connection('h58_dev_db')->table('cpr_mst_district')->where('ID', $districtKeys[$q])->first();
+                                    if (!$checkDistrict){
+                                        $data = [
+                                            'ID' => $districtKeys[$q],
+                                            'DISTRICT_NAME' => $dataArrayDistrict[$districtKeys[$q]],
+                                            'REMARKS' => 'FROM PERTANIAN 2024',
+                                            'CREATED_BY' => 'SOFYAN',
+                                            'DATE_CREATED' => NOW(), 
+                                            'CITY' => $dataArrayCity[$cityKeys[$p]],
+                                            'CPR_MST_CITY_ID' => $cityKeys[$p],
+                                            'CPR_MST_CITY_ID_BACUP' => $cityKeys[$p],
+                                        ];
+                                        $instDistrict = DB::connection('h58_dev_db')->table('cpr_mst_district')->insert($data);
+                                        // $instDistrict = true;
+                                        if($instDistrict){
+                                            $insertCounts['insertDistrict']++;
+                                        } else {
+                                            $insertCounts['failInsertDistrict']++;
                                         }
+                                    } else{
+                                        $insertCounts['alreadyDistrict']++;
+                                    }
+                                    $districtKeysSearch = substr($districtKeys[$q], -3);
+                                    $responseSubdistrict = Http::get("https://sipedas.pertanian.go.id/api/wilayah/list_wilayah?thn=2024&lvl=13&pro=$provKeys[$i]&kab=$cityKeysSearch&kec=$districtKeysSearch&lv2=14");
+                                    if ($responseSubdistrict->successful()) {
+                                        $dataArraySubdistrict = json_decode($responseSubdistrict, true);
+                                        $subdistrictKeys = array_keys($dataArraySubdistrict);
+                                        for ($r=0; $r < count($subdistrictKeys); $r++) { 
+                                            $checkSubdistrict = DB::connection('h58_dev_db')->table('cpr_mst_subdistrict')->where('ID', $subdistrictKeys[$r])->first();
+                                            if (!$checkSubdistrict){
+                                                $data = [
+                                                    'ID' => $subdistrictKeys[$r],
+                                                    'SUBDISTRICT_NAME' => $dataArraySubdistrict[$subdistrictKeys[$r]],
+                                                    'REMARKS' => 'FROM PERTANIAN 2024',
+                                                    'CREATED_BY' => 'SOFYAN',
+                                                    'DATE_CREATED' => NOW(), 
+                                                    'DISTRICT_NAME' => $dataArrayDistrict[$districtKeys[$q]],
+                                                    'CPR_MST_DISTRICT_ID' => $districtKeys[$q],
+                                                ];
+                                                $instSubdistrict = DB::connection('h58_dev_db')->table('cpr_mst_subdistrict')->insert($data);
+                                                // $instSubdistrict = true;
+                                                if($instSubdistrict){
+                                                    $insertCounts['insertSubdistrict']++;
+                                                } else {
+                                                    $insertCounts['failInsertSubdistrict']++;
+                                                }
+                                            } else{
+                                                $insertCounts['alreadySubdistrict']++;
+                                            }
+                                        }
+                                    }else{
+                                        $insertCounts['connectionFailedforAPISubdistrict']++;
                                     }
                                 }
+                            }else{
+                                $insertCounts['connectionFailedforAPIDistrict']++;
                             }
                         }
+                    }else{
+                        $insertCounts['connectionFailedforAPICity']++;
                     }
                 }
             }
+            DB::commit();
+            return response()->json([
+                'message' => 'success',
+                'insertCounts' => $insertCounts,
+                'status' => true
+            ], 200);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            return response()->json([
+                'message' => $th,
+                'insertCounts' => $insertCounts,
+                'status' => false
+            ], 400);
         }
-        return response()->json([
-            'message' => 'success',
-            'insertCounts' => $insertCounts
-        ]);
     }
 
     public function testing(){
